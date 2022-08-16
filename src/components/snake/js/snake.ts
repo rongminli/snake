@@ -130,10 +130,9 @@ export class Snake {
         }, this.speed)
     }
     eat() {
-        if(this.ground.food != null){
+        if(this.ground.food.cell != null){
             this.body.shift(this.ground.food.cell)
             this.ground.food?.generate()
         }
-        
     }
 }

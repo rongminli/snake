@@ -61,7 +61,7 @@ export const GroundVue = defineComponent({
         return () =>
             <div class="ground" style={style}>
                 {ground.cells.map(row => {
-                    return row.map(cell => <CellVue cellViewState={cell.viewState} />)
+                    return row.map(cell => <CellVue cell={cell} />)
                 })}
             </div>
     }
