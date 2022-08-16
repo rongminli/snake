@@ -6,13 +6,33 @@
 *************************************************************************/
 
 <script setup lang='ts'>
-import GroundVue from './ground.vue';
+
+import { createGround, GroundVue } from './Ground';
+
+const ground = createGround()
+
 </script>
 
 <template>
-<GroundVue ref="ground"></GroundVue>
+    <GroundVue :ground="ground"></GroundVue>
 </template>
 
-<style lang='scss' scoped>
+<style lang='scss'>
+.cell {
+    border: 1px solid #fff;
+}
 
+.space {
+    background-color: #ffffff;
+    transition: .5s;
+
+}
+
+.snake-body {
+    background-color: #333333;
+}
+
+.food {
+    background-color: rgb(163, 207, 28);
+}
 </style>

@@ -1,17 +1,17 @@
-import { positionToIndex } from './shared'
-import { Snake } from './snake'
+import { Cell } from '../Cell'
+import { Ground } from '../Ground'
 
 export class Food {
-    cell = null
-    constructor(private ground: any[]) {
+    cell : Cell | null = null
+    constructor(private ground: Ground) {
+        ground.food = this
         this.generate()
     }
     generate() {
         const x = Math.random() * 29 | 0
         const y = Math.random() * 29 | 0
-        const index = positionToIndex(x, y)
 
-        const randomCell = this.ground[index]
+        const randomCell = this.ground.cells[y][x]
 
         if(!randomCell.isSpace())  {
             this.generate()

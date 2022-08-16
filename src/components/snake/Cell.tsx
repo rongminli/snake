@@ -1,60 +1,71 @@
-import { computed, defineComponent, ref } from "vue";
+import { computed, defineComponent, PropType, Ref, ref } from "vue";
 
-type Position = {
+export interface Position {
     x: number,
     y: number
 }
 
-enum CellState {
+export enum CellViewState {
     SPACE = 0,
     SNAKE_BODY = 1,
     FOOD = 2,
 }
 
-export default defineComponent({
+export interface Cell {
+    viewState:  Ref<CellViewState>
+    position: Position
+    asSpace: () => void,
+    asFood: () => void,
+    asSnakeBody: () => void,
+    isSpace: () => boolean,
+    isFood: () => boolean,
+    isSnakeBody: () => boolean
+}
+
+export function createCell(position: Position): Cell {
+    const viewState = ref(CellViewState.SPACE)
+    function changeState(_state: CellViewState) {
+        viewState.value = _state
+    }
+    return {
+        viewState: viewState,
+        position,
+        asSpace: () => changeState(CellViewState.SPACE),
+        asFood: () => changeState(CellViewState.FOOD),
+        asSnakeBody: () => changeState(CellViewState.SNAKE_BODY),
+        isSpace: () => viewState.value === CellViewState.SPACE,
+        isFood: () => viewState.value === CellViewState.FOOD,
+        isSnakeBody: () => viewState.value === CellViewState.SNAKE_BODY
+    }
+}
+
+
+export const CellVue = defineComponent({
     props: {
-        position: Position
+        cell: {
+            type: Object as PropType<Cell>,
+            required: true
+        }
     },
     setup(props) {
-        const { position } = props
-
-        const cellState = ref(CellState.SPACE)
-
+        const { cell } = props
+        const cellViewState = cell.viewState
         const className = computed(() => {
             let className = ''
-            switch (cellState.value) {
-                case CellState.SPACE:
+            switch (cellViewState.value) {
+                case CellViewState.SPACE:
                     className = 'space'
                     break
-                case CellState.SNAKE_BODY:
+                case CellViewState.SNAKE_BODY:
                     className = 'snake-body'
                     break
-                case CellState.FOOD:
+                case CellViewState.FOOD:
                     className = 'food'
                     break
             }
             return className
         })
 
-        function changeState(state: CellState) {
-            cellState.value = state
-        }
-
-        defineExpose({
-            position,
-            asSpace: () => changeState(CellState.SPACE),
-            asFood: () => changeState(CellState.FOOD),
-            asSnakeBody: () => changeState(CellState.SNAKE_BODY),
-            isSpace: () => cellState.value === CellState.SPACE,
-            isFood: () => cellState.value === CellState.FOOD,
-            isSnakeBody: () => cellState.value === CellState.SNAKE_BODY
-        })
-
-        return {
-            className,
-        }
-    },
-    render() {
-        return <div class={'cell ' + this.className }></div>
+        return () => <div class={'cell ' + className.value}></div>
     }
 })

@@ -1,4 +1,5 @@
-import { Food } from "./food"
+import { Cell } from "../Cell"
+import { Ground } from "../Ground"
 
 enum Direction {
     UP = 1,
@@ -8,28 +9,25 @@ enum Direction {
 }
 
 class SnakeBody {
-    cells = [] as any[]
-    constructor(ground: any[]) {
-        if (ground.length > 2) {
-            this.push(ground[1])
-            this.push(ground[0])
-        } else {
-            console.warn('ground not ready')
-        }
+    cells = [] as Cell[]
+    constructor(ground: Ground) {
+        this.push(ground.cells[0][1])
+        this.push(ground.cells[0][0])
     }
-    push(cell: any) {
+    push(cell: Cell) {
         cell.asSnakeBody()
         this.cells.push(cell)
+        console.log(this.cells)
     }
-    shift(cell: any) {
+    shift(cell: Cell) {
         cell.asSnakeBody()
         this.cells.unshift(cell)
     }
     pop() {
         const snakeTail = this.cells.pop()
-        snakeTail.asSpace()
+        snakeTail?.asSpace()
     }
-    move(to: any) {
+    move(to: Cell) {
         this.shift(to)
         this.pop()
     }
@@ -43,9 +41,10 @@ export class Snake {
     body: SnakeBody
     direction = Direction.RIGHT
 
-    constructor(private ground: { cells: any[], food: Food }) {
-        this.body = new SnakeBody(this.ground.cells)
+    constructor(private ground: Ground) {
+        this.body = new SnakeBody(this.ground)
         this.setKeyboardListener()
+        ground.snake = this
     }
 
     private setKeyboardListener() {
@@ -73,44 +72,42 @@ export class Snake {
         }
     }
 
-    private nextCell() {
+    private nextCell(): Cell {
         const head = this.body.head()
         let { x, y } = head.position
-        x = x - 1
-        y = y - 1
         let index = 0
         switch (this.direction) {
             case Direction.LEFT:
                 if (x === 0) {
                     throw new Error('Out of bound')
                 }
-                index = (x - 1) + (y * 30)
+                x--
                 break
             case Direction.UP:
                 if (y === 0) {
                     throw new Error('Out of bound')
                 }
-                index = x + (y - 1) * 30
+                y--
                 break
             case Direction.RIGHT:
                 if (x === 29) {
                     throw new Error('Out of bound')
                 }
-                index = (x + 1) + (y * 30)
+                x++
                 break
             case Direction.DOWN:
                 if (y === 29) {
                     throw new Error('Out of bound')
                 }
-                index = x + (y + 1) * 30
+                y++
                 break
         }
-        return this.ground.cells[index]
+        return this.ground.cells[y][x]
     }
 
     move() {
         setTimeout(() => {
-            let to
+            let to: Cell
             try {
                 to = this.nextCell()
             } catch (error) {
@@ -133,7 +130,10 @@ export class Snake {
         }, this.speed)
     }
     eat() {
-        this.body.shift(this.ground.food.cell)
-        this.ground.food.generate()
+        if(this.ground.food != null){
+            this.body.shift(this.ground.food.cell)
+            this.ground.food?.generate()
+        }
+        
     }
 }
