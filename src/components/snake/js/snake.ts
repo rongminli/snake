@@ -1,5 +1,7 @@
+import { DeepReadonly, reactive, UnwrapNestedRefs, readonly } from "vue"
 import { Cell } from "../Cell"
 import { Ground } from "../Ground"
+import { Food } from "./food"
 
 enum Direction {
     UP = 1,
@@ -8,131 +10,173 @@ enum Direction {
     RIGHT = 4
 }
 
-class SnakeBody {
-    cells = [] as Cell[]
-    constructor(ground: Ground) {
-        this.push(ground.cells[0][1])
-        this.push(ground.cells[0][0])
-    }
-    push(cell: Cell) {
+type SnakeBodyState = {
+    bodyCells: Cell[]
+}
+
+interface SnakeBody {
+    state: DeepReadonly<UnwrapNestedRefs<SnakeBodyState>>,
+    moveTo(cell: Cell): void,
+    getHead(): Cell,
+    eat(food: Food): void
+}
+
+function CreateSnakeBody(ground: Ground): SnakeBody {
+    const state = reactive<SnakeBodyState>({
+        bodyCells: [] 
+    })
+
+    const unshift = (cell: Cell) => {
         cell.asSnakeBody()
-        this.cells.push(cell)
-        console.log(this.cells)
+        state.bodyCells.unshift(cell)
     }
-    shift(cell: Cell) {
-        cell.asSnakeBody()
-        this.cells.unshift(cell)
-    }
-    pop() {
-        const snakeTail = this.cells.pop()
+
+    const pop = () => {
+        const snakeTail = state.bodyCells.pop()
         snakeTail?.asSpace()
     }
-    move(to: Cell) {
-        this.shift(to)
-        this.pop()
+
+    function init() {
+        unshift(ground.cells[0][0])
+        unshift(ground.cells[0][1])
     }
-    head() {
-        return this.cells[0]
+
+    init()
+
+    return {
+        state: readonly(state),
+        moveTo(to: Cell) {
+            unshift(to)
+            pop()
+        },
+        getHead: () => state.bodyCells[0],
+        eat(food){
+            const foodCell = food.getCurrentCell()
+            if(foodCell != null)  {
+                foodCell.asSnakeBody()
+                unshift(foodCell)
+            }
+        }
     }
 }
 
-export class Snake {
-    speed = 250
-    body: SnakeBody
-    direction = Direction.RIGHT
+export type SnakeState = {
+    speed: number,
+    direction: Direction,
+    isActive: boolean
+}
 
-    constructor(private ground: Ground) {
-        this.body = new SnakeBody(this.ground)
-        this.setKeyboardListener()
-        ground.snake = this
-    }
+export interface Snake {
+    state: DeepReadonly<UnwrapNestedRefs<SnakeState>>,
+    body: SnakeBody,
+    pause(): void,
+    start(): void
+}
+export function CreateSnake(ground: Ground): Snake {
 
-    private setKeyboardListener() {
-        window.addEventListener('keydown', this.keydownHandler.bind(this))
-    }
+    const snakeState = reactive<SnakeState> ({
+        speed: 250,
+        direction: Direction.RIGHT,
+        isActive: false
+    })
 
-    keydownHandler(event: KeyboardEvent) {
+    const body =  CreateSnakeBody(ground)
+
+
+    function keydownHandler(event: KeyboardEvent) {
         switch (event.code) {
             case 'ArrowUp':
-                if (this.direction === Direction.DOWN) break
-                this.direction = Direction.UP
+                if (snakeState.direction === Direction.DOWN) break
+                snakeState.direction = Direction.UP
                 break
             case 'ArrowDown':
-                if (this.direction === Direction.UP) break
-                this.direction = Direction.DOWN
+                if (snakeState.direction === Direction.UP) break
+                snakeState.direction = Direction.DOWN
                 break
             case 'ArrowRight':
-                if (this.direction === Direction.LEFT) break
-                this.direction = Direction.RIGHT
+                if (snakeState.direction === Direction.LEFT) break
+                snakeState.direction = Direction.RIGHT
                 break
             case 'ArrowLeft':
-                if (this.direction === Direction.RIGHT) break
-                this.direction = Direction.LEFT
+                if (snakeState.direction === Direction.RIGHT) break
+                snakeState.direction = Direction.LEFT
                 break
         }
     }
 
-    private nextCell(): Cell {
-        const head = this.body.head()
-        let { x, y } = head.position
-        let index = 0
-        switch (this.direction) {
+    function setKeyboardListener() {
+        window.addEventListener('keydown', keydownHandler)
+    }
+
+    function nextCell(): Cell {
+        const headCell = body.getHead()
+        let { x, y } = headCell.position
+        switch (snakeState.direction) {
             case Direction.LEFT:
-                if (x === 0) {
-                    throw new Error('Out of bound')
-                }
+                if (x === 0) throw new Error('Out of bound')
                 x--
                 break
             case Direction.UP:
-                if (y === 0) {
-                    throw new Error('Out of bound')
-                }
+                if (y === 0) throw new Error('Out of bound')
                 y--
                 break
             case Direction.RIGHT:
-                if (x === 29) {
-                    throw new Error('Out of bound')
-                }
+                if (x === 29) throw new Error('Out of bound')
                 x++
                 break
             case Direction.DOWN:
-                if (y === 29) {
-                    throw new Error('Out of bound')
-                }
+                if (y === 29) throw new Error('Out of bound')
                 y++
                 break
         }
-        return this.ground.cells[y][x]
+        return ground.cells[y][x]
     }
 
-    move() {
-        setTimeout(() => {
-            let to: Cell
-            try {
-                to = this.nextCell()
-            } catch (error) {
-                alert(error)
+    function eat() {
+        body.eat(ground.food) 
+        ground.food.generate()
+    }
+
+    function move() {
+        if(!snakeState.isActive) return
+        let to: Cell
+        try {
+            to = nextCell()
+        } catch (error) {
+            alert(error)
+            return
+        }
+
+        if (to.isFood()) {
+            eat()
+        } else if (to.isSnakeBody()) {
+            if (to !== body.state.bodyCells[1]) {
+                alert('You eat your self')
                 return
             }
+        } else {
+            body.moveTo(to)
+        }
 
-            if (to.isFood()) {
-                this.eat()
-            } else if (to.isSnakeBody()) {
-                if (to !== this.body.cells[1]) {
-                    alert('You eat your self')
-                    return
-                }
-            } else {
-                this.body.move(to)
-            }
-
-            this.move()
-        }, this.speed)
+        setTimeout(move, snakeState.speed)
     }
-    eat() {
-        if(this.ground.food.cell != null){
-            this.body.shift(this.ground.food.cell)
-            this.ground.food?.generate()
+
+    const snake = {
+        state: readonly(snakeState),
+        body,
+        pause: () => snakeState.isActive = false,
+        start: () => {
+            snakeState.isActive = true
+            move()
         }
     }
+
+    function init() {
+        setKeyboardListener()
+    }
+
+    init()
+
+    return snake
 }
+

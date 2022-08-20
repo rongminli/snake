@@ -1,4 +1,4 @@
-import { computed, defineComponent, PropType, Ref, ref } from "vue";
+import { computed, defineComponent, PropType, reactive, UnwrapNestedRefs } from "vue";
 
 export interface Position {
     x: number,
@@ -11,33 +11,76 @@ export enum CellViewState {
     FOOD = 2,
 }
 
-export interface Cell {
-    viewState:  Ref<CellViewState>
+type CellState = {
+    viewState: CellViewState
+}
+
+// export interface Cell {
+//     state: DeepReadonly<UnwrapNestedRefs<CellState>>,
+//     asSpace: () => void,
+//     asFood: () => void,
+//     asSnakeBody: () => void,
+//     isSpace: () => boolean,
+//     isFood: () => boolean,
+//     isSnakeBody: () => boolean
+// }
+
+export class Cell {
+    state: UnwrapNestedRefs<CellState>
     position: Position
-    asSpace: () => void,
-    asFood: () => void,
-    asSnakeBody: () => void,
-    isSpace: () => boolean,
-    isFood: () => boolean,
-    isSnakeBody: () => boolean
+    constructor(position: Position) {
+        this.state = reactive<CellState>({
+            viewState: CellViewState.SPACE,
+        })
+        this.position = position
+    }
+    changeState(viewState: CellViewState) {
+        this.state.viewState = viewState
+    }
+    asSpace() {
+        this.changeState(CellViewState.SPACE)
+    }
+    asFood() {
+        this.changeState(CellViewState.FOOD)
+    }
+    asSnakeBody() {
+        this.changeState(CellViewState.SNAKE_BODY)
+    }
+    isSpace() {
+        return this.state.viewState === CellViewState.SPACE
+    }
+    isFood() {
+        return this.state.viewState === CellViewState.FOOD
+    }
+    isSnakeBody() {
+        return this.state.viewState === CellViewState.SNAKE_BODY
+    }
 }
 
 export function createCell(position: Position): Cell {
-    const viewState = ref(CellViewState.SPACE)
-    function changeState(_state: CellViewState) {
-        viewState.value = _state
-    }
-    return {
-        viewState: viewState,
-        position,
-        asSpace: () => changeState(CellViewState.SPACE),
-        asFood: () => changeState(CellViewState.FOOD),
-        asSnakeBody: () => changeState(CellViewState.SNAKE_BODY),
-        isSpace: () => viewState.value === CellViewState.SPACE,
-        isFood: () => viewState.value === CellViewState.FOOD,
-        isSnakeBody: () => viewState.value === CellViewState.SNAKE_BODY
-    }
+    return new Cell(position)
 }
+
+// export function createCell(position: Position): Cell {
+//     const state = reactive<CellState>({
+//         viewState: CellViewState.SPACE,
+//         position
+//     })
+
+//     function changeState(viewState: CellViewState) {
+//         state.viewState = viewState
+//     }
+
+//     return {
+//         state: readonly(state),
+//         asSpace: () => changeState(CellViewState.SPACE),
+//         asFood: () => changeState(CellViewState.FOOD),
+//         asSnakeBody: () => changeState(CellViewState.SNAKE_BODY),
+//         isSpace: () => state.viewState === CellViewState.SPACE,
+//         isFood: () => state.viewState === CellViewState.FOOD,
+//         isSnakeBody: () => state.viewState === CellViewState.SNAKE_BODY
+//     }
+// }
 
 
 export const CellVue = defineComponent({
@@ -49,10 +92,11 @@ export const CellVue = defineComponent({
     },
     setup(props) {
         const { cell } = props
-        const cellViewState = cell.viewState
+        const cellState = cell.state
+
         const className = computed(() => {
             let className = ''
-            switch (cellViewState.value) {
+            switch (cellState.viewState) {
                 case CellViewState.SPACE:
                     className = 'space'
                     break
@@ -66,6 +110,7 @@ export const CellVue = defineComponent({
             return className
         })
 
-        return () => <div class={'cell ' + className.value}></div>
+        return () =>
+            <div class={'cell ' + className.value}></div>
     }
 })

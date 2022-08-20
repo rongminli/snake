@@ -1,21 +1,25 @@
-import { onMounted, defineComponent, PropType } from 'vue';
+import { onMounted, defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
 import { Cell, createCell, CellVue } from './Cell';
-import { Food } from './js/food';
-import { Snake } from './js/snake';
+import { CreateFood, Food } from './js/food';
+import { CreateSnake, Snake } from './js/snake';
 
-export const row = 30;
-export const colum = 30;
-
+export type GroundState = {
+    isActive: Boolean
+}
 export interface Ground {
+    state: DeepReadonly<UnwrapNestedRefs<GroundState>>,
     row: number,
     colum: number,
     cells: Cell[][],
     snake: Snake,
-    food: Food
+    food: Food,
+    pause(): void,
+    start(): void,
 }
 
-function getCells(): Cell[][] {
-    const cells = [] as Cell[][] 
+function fillGround(ground: Ground) {
+    const cells = [] as Cell[][]
+    const { row, colum } = ground
     for (let i = 0; i < row; i++) {
         cells.push([])
         for (let j = 0; j < colum; j++) {
@@ -23,14 +27,37 @@ function getCells(): Cell[][] {
             cells[i].push(cell)
         }
     }
-    return cells
+    ground.cells = cells
 }
 
 export function createGround(): Ground {
-    const ground = {} as Ground
-    ground.cells = getCells()
-    new Food(ground)
-    new Snake(ground)
+    const state = reactive<GroundState>({
+        isActive: false
+    })
+    const ground = {
+        state: readonly(state),
+        row: 30,
+        colum: 30,
+    } as Ground
+
+    fillGround(ground)
+    const snake = CreateSnake(ground)
+    const food = CreateFood(ground)
+
+    ground.food = food
+    ground.snake = snake
+
+    ground.pause = () => {
+        if(!state.isActive) return
+        state.isActive = false
+        ground.snake.pause()
+    }
+
+    ground.start = () => {
+        if(state.isActive) return
+        state.isActive = true
+        ground.snake.start()
+    }
 
     return ground
 }
@@ -43,20 +70,15 @@ export const GroundVue = defineComponent({
         }
     },
     setup(props) {
+        const { ground } = props
+
         const style = {
             display: 'grid',
-            grid: `repeat(${row}, 1fr) / repeat(${colum}, 1fr)`,
+            grid: `repeat(${ground.row}, 1fr) / repeat(${ground.colum}, 1fr)`,
             border: '1px solid #ddd',
             height: '600px',
             width: '600px',
         }
-
-        const { ground } = props
-
-        onMounted(() => {
-            ground.snake?.move()
-            console.log(ground)
-        })
 
         return () =>
             <div class="ground" style={style}>

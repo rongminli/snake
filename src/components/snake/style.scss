@@ -1,0 +1,17 @@
+.cell {
+    border: 1px solid #fff;
+}
+
+.space {
+    background-color: #ffffff;
+    transition: .5s;
+
+}
+
+.snake-body {
+    background-color: #333333;
+}
+
+.food {
+    background-color: rgb(163, 207, 28);
+}
