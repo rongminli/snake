@@ -1,4 +1,4 @@
-import { onMounted, defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
+import { defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
 import { Cell, createCell, CellVue } from './Cell';
 import { CreateFood, Food } from './js/food';
 import { CreateSnake, Snake } from './js/snake';
