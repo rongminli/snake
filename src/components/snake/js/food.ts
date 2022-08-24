@@ -6,31 +6,35 @@ export type FoodState = {
     currentCell: Cell | null
 }
 export interface Food {
+    reset()
     getCurrentCell(): Cell
     generate(): void
 }
 export function CreateFood(ground: Ground): Food {
-    let currentCell : Cell
+    let currentCell: Cell
 
     function generate() {
-        const x = Math.random() * 29 | 0
-        const y = Math.random() * 29 | 0
-
-        const randomCell = ground.cells[y][x]
-
-        if(!randomCell.isSpace())  {
-            generate()
-        }else {
-            randomCell.asFood()
-            currentCell = randomCell
-        }
+        const spaceCell = [] as Cell[]
+        ground.cells.forEach(cells => cells.forEach(cell => {
+            if (!cell.isSnakeBody()) {
+                spaceCell.push(cell)
+            }
+        }))
+        const index = Math.random() * spaceCell.length - 1 | 0
+        const randomCell = spaceCell[index]
+        randomCell.asFood()
+        currentCell = randomCell
     }
 
     const food = {
         getCurrentCell() {
             return currentCell
         },
-        generate
+        generate,
+        reset() {
+            currentCell.asSpace()
+            generate()
+        }
     }
 
     function init() {

@@ -9,6 +9,7 @@ export enum CellViewState {
     SPACE = 0,
     SNAKE_BODY = 1,
     FOOD = 2,
+    PATH = 3,
 }
 
 type CellState = {
@@ -46,6 +47,9 @@ export class Cell {
     asSnakeBody() {
         this.changeState(CellViewState.SNAKE_BODY)
     }
+    asPath() {
+        this.changeState(CellViewState.PATH)
+    }
     isSpace() {
         return this.state.viewState === CellViewState.SPACE
     }
@@ -55,33 +59,14 @@ export class Cell {
     isSnakeBody() {
         return this.state.viewState === CellViewState.SNAKE_BODY
     }
+    isPath() {
+        return this.state.viewState === CellViewState.PATH
+    }
 }
 
 export function createCell(position: Position): Cell {
     return new Cell(position)
 }
-
-// export function createCell(position: Position): Cell {
-//     const state = reactive<CellState>({
-//         viewState: CellViewState.SPACE,
-//         position
-//     })
-
-//     function changeState(viewState: CellViewState) {
-//         state.viewState = viewState
-//     }
-
-//     return {
-//         state: readonly(state),
-//         asSpace: () => changeState(CellViewState.SPACE),
-//         asFood: () => changeState(CellViewState.FOOD),
-//         asSnakeBody: () => changeState(CellViewState.SNAKE_BODY),
-//         isSpace: () => state.viewState === CellViewState.SPACE,
-//         isFood: () => state.viewState === CellViewState.FOOD,
-//         isSnakeBody: () => state.viewState === CellViewState.SNAKE_BODY
-//     }
-// }
-
 
 export const CellVue = defineComponent({
     props: {
@@ -105,6 +90,9 @@ export const CellVue = defineComponent({
                     break
                 case CellViewState.FOOD:
                     className = 'food'
+                    break
+                case CellViewState.PATH:
+                    className = 'path'
                     break
             }
             return className

@@ -1,20 +1,22 @@
 import { defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
 import { Cell, createCell, CellVue } from './Cell';
 import { CreateFood, Food } from './js/food';
-import { CreateSnake, Snake } from './js/snake';
+import { CreateSmartSnake, CreateSnake, SmartSnake, Snake } from './js/snake';
 
 export type GroundState = {
     isActive: Boolean
 }
+
 export interface Ground {
     state: DeepReadonly<UnwrapNestedRefs<GroundState>>,
     row: number,
     colum: number,
     cells: Cell[][],
-    snake: Snake,
+    snake: Snake | SmartSnake,
     food: Food,
     pause(): void,
     start(): void,
+    restart(): void,
 }
 
 function fillGround(ground: Ground) {
@@ -36,12 +38,12 @@ export function createGround(): Ground {
     })
     const ground = {
         state: readonly(state),
-        row: 30,
-        colum: 30,
+        row: 10,
+        colum: 10,
     } as Ground
 
     fillGround(ground)
-    const snake = CreateSnake(ground)
+    const snake = CreateSmartSnake(ground)
     const food = CreateFood(ground)
 
     ground.food = food
@@ -57,6 +59,12 @@ export function createGround(): Ground {
         if(state.isActive) return
         state.isActive = true
         ground.snake.start()
+    }
+
+    ground.restart = () => {
+        state.isActive = false
+        ground.snake.restart()
+        ground.food.reset()
     }
 
     return ground

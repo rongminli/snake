@@ -7,9 +7,14 @@ export default defineComponent({
     setup() {
         const ground = createGround()
 
+        // ground.snake.auto(); 
+
         const style = {
             display: 'flex'
         }
+
+        onblur = () => ground.pause()
+
 
         return () =>
             <div class="snakeContainer" style={style}>

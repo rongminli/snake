@@ -18,6 +18,12 @@ export const DashboardVue = defineComponent({
                 <button onClick={groundState.isActive ? ground.pause : ground.start}>
                     {groundState.isActive ? '暂停' : '开始'}
                 </button>
+                <button onClick={ground.restart}>
+                    重置
+                </button>
+                <button onClick={ground.snake.auto.bind(ground.snake)}>
+                    自动
+                </button>
                 <div>积分：{snakeBodyState.bodyCells.length}</div>
             </div>
     }

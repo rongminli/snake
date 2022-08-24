@@ -4,8 +4,7 @@
 
 .space {
     background-color: #ffffff;
-    transition: .5s;
-
+    // transition: .5s;
 }
 
 .snake-body {
@@ -14,4 +13,8 @@
 
 .food {
     background-color: rgb(163, 207, 28);
+}
+
+.path {
+    background-color: rgb(207, 180, 28);
 }
