@@ -16,16 +16,6 @@ type CellState = {
     viewState: CellViewState
 }
 
-// export interface Cell {
-//     state: DeepReadonly<UnwrapNestedRefs<CellState>>,
-//     asSpace: () => void,
-//     asFood: () => void,
-//     asSnakeBody: () => void,
-//     isSpace: () => boolean,
-//     isFood: () => boolean,
-//     isSnakeBody: () => boolean
-// }
-
 export class Cell {
     state: UnwrapNestedRefs<CellState>
     position: Position

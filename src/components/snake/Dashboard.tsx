@@ -1,5 +1,6 @@
 import { defineComponent, PropType } from "vue";
 import { Ground } from "./Ground";
+import { CellPoint, createSnakePathAnalyst } from "./js/snakePathAnalysis";
 
 export const DashboardVue = defineComponent({
     props: {
@@ -15,7 +16,7 @@ export const DashboardVue = defineComponent({
 
         return () =>
             <div>
-                <button onClick={groundState.isActive ? ground.pause : ground.start}>
+                <button onClick={groundState.isActive ? ground.pause.bind(ground) : ground.start.bind(ground)}>
                     {groundState.isActive ? '暂停' : '开始'}
                 </button>
                 <button onClick={ground.restart}>

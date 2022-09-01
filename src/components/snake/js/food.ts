@@ -6,7 +6,7 @@ export type FoodState = {
     currentCell: Cell | null
 }
 export interface Food {
-    reset()
+    reset(): void
     getCurrentCell(): Cell
     generate(): void
 }
