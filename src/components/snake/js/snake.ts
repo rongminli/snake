@@ -1,7 +1,7 @@
-import { DeepReadonly, reactive, UnwrapNestedRefs, readonly, toRaw, getCurrentInstance } from "vue"
-import { Cell, Position } from "../Cell"
+import { reactive, UnwrapNestedRefs } from "vue"
+import { Cell } from "../Cell"
 import { Ground } from "../Ground"
-import { Food } from "./food"
+import { SnakeBody } from "./snakeBody"
 import { CellPoint, createSnakePathAnalyst } from "./snakePathAnalysis"
 
 enum Direction {
@@ -9,82 +9,6 @@ enum Direction {
     DOWN = 2,
     LEFT = 3,
     RIGHT = 4
-}
-
-type SnakeBodyState = {
-    bodyCells: Cell[]
-}
-
-interface SnakeBody {
-    restart(): void
-    state: UnwrapNestedRefs<SnakeBodyState>,
-    moveTo(cell: Cell): void,
-    getHead(): Cell,
-    eat(food: Food): void,
-    reset(bodyCells: Cell[]): void
-}
-
-function CreateSnakeBody(ground: Ground): SnakeBody {
-    const state = reactive<SnakeBodyState>({
-        bodyCells: []
-    })
-
-    const unshift = (cell: Cell) => {
-        cell.asSnakeBody()
-        state.bodyCells.unshift(cell)
-    }
-
-    const pop = () => {
-        const snakeTail = state.bodyCells.pop()
-        snakeTail?.asSpace()
-    }
-
-    const push = (cell: Cell) => {
-        cell.asSnakeBody()
-        state.bodyCells.push(cell)
-    }
-
-    function init() {
-        unshift(ground.cells[0][0])
-        unshift(ground.cells[0][1])
-    }
-
-
-
-    init()
-
-    function clear() {
-        state.bodyCells.forEach(cell => cell.asSpace())
-        state.bodyCells.length = 0
-    }
-
-    function load(bodyCells: Cell[]) {
-        bodyCells.forEach(cell => push(cell))
-    }
-
-    return {
-        state: state,
-        moveTo(to: Cell) {
-            unshift(to)
-            pop()
-        },
-        getHead: () => state.bodyCells[0],
-        eat(food) {
-            const foodCell = food.getCurrentCell()
-            if (foodCell != null) {
-                foodCell.asSnakeBody()
-                unshift(foodCell)
-            }
-        },
-        restart() {
-            clear()
-            init()
-        },
-        reset(bodyCells: Cell[]) {
-            clear()
-            load(bodyCells)
-        }
-    }
 }
 
 export type SnakeState = {
@@ -104,7 +28,7 @@ export class Snake {
             direction: Direction.RIGHT,
             isActive: false
         })
-        this.body = CreateSnakeBody(ground)
+        this.body = new SnakeBody(ground)
 
         addEventListener('keydown', this.keydownHandler)
     }
@@ -135,7 +59,7 @@ export class Snake {
         const { body, state: snakeState, ground } = this
 
         const headCell = body.getHead()
-        let { x, y } = headCell.position
+        let { x, y } = headCell.point
         switch (snakeState.direction) {
             case Direction.LEFT:
                 if (x === 0) throw new Error('Out of bound')
@@ -179,7 +103,7 @@ export class Snake {
         if (to.isFood()) {
             eat()
         } else if (to.isSnakeBody()) {
-            if (to !== body.state.bodyCells[1]) {
+            if (to !== body.getState().cells[1]) {
                 alert('You eat your self')
                 return
             }
@@ -213,18 +137,17 @@ export function CreateSnake(ground: Ground): Snake {
 }
 
 type Path = Cell[]
-type Point = {
-    x: number, y: number, distance: number, parent: Point | null
-}
+
 
 export class SmartSnake extends Snake {
-    pathAnalyst
+    private pathAnalyst
     constructor(ground: Ground) {
         super(ground)
         this.pathAnalyst = createSnakePathAnalyst(this.ground)
     }
     moveOnPath(path: Path) {
         const cell = path.shift() as Cell
+
         if (cell) {
             setTimeout(() => {
                 if (cell.isFood()) {
@@ -234,9 +157,10 @@ export class SmartSnake extends Snake {
                 }
                 this.moveOnPath(path)
             }, 50)
-        } else {
-            this.auto()
+        }else {
+            setTimeout(this.auto.bind(this),0)
         }
+
     }
     auto() {
         let path = this.pathAnalyst()

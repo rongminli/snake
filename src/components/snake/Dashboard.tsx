@@ -25,7 +25,7 @@ export const DashboardVue = defineComponent({
                 <button onClick={ground.snake.auto.bind(ground.snake)}>
                     自动
                 </button>
-                <div>积分：{snakeBodyState.bodyCells.length}</div>
+                <div>积分：{snakeBodyState.cells.length}</div>
             </div>
     }
 })

@@ -1,6 +1,6 @@
-import { computed, defineComponent, PropType, reactive, UnwrapNestedRefs } from "vue";
+import { computed, defineComponent, PropType, reactive, readonly, UnwrapNestedRefs } from "vue";
 
-export interface Position {
+export interface Point {
     x: number,
     y: number
 }
@@ -17,15 +17,17 @@ type CellState = {
 }
 
 export class Cell {
-    state: UnwrapNestedRefs<CellState>
-    position: Position
-    constructor(position: Position) {
+    private state: UnwrapNestedRefs<CellState>
+    public pubState
+    point: Point
+    constructor(position: Point) {
         this.state = reactive<CellState>({
             viewState: CellViewState.SPACE,
         })
-        this.position = position
+        this.pubState = readonly(this.state)
+        this.point = position
     }
-    changeState(viewState: CellViewState) {
+    private changeState(viewState: CellViewState) {
         this.state.viewState = viewState
     }
     asSpace() {
@@ -54,7 +56,7 @@ export class Cell {
     }
 }
 
-export function createCell(position: Position): Cell {
+export function createCell(position: Point): Cell {
     return new Cell(position)
 }
 
@@ -65,9 +67,8 @@ export const CellVue = defineComponent({
             required: true
         }
     },
-    setup(props) {
-        const { cell } = props
-        const cellState = cell.state
+    setup({cell}) {
+        const cellState = cell.pubState
 
         const className = computed(() => {
             let className = ''

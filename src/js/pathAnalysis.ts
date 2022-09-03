@@ -1,10 +1,9 @@
 export type Point = {
-    getId(): string
 }
 
 export type Path = {
     parent: Path | null,
-    children: Path[],
+    children: Path[] | null,
     point: Point,
     distance: number
 }
@@ -12,75 +11,55 @@ export type Path = {
 export interface Config {
     isTarget(path: Path): boolean,
     deriveChildren(path: Path): Path[],
-    pathAssess(path: Path): number
+    pathAssess<T extends Path>(path: T): number
 }
 
 export function CreatePathAnalyst(config: Config) {
 
     const { isTarget, deriveChildren, pathAssess } = config
 
-    const pointLockMap = new Map<string, Path[]>()
-    const lockedPath = [] as Path[]
-
+    const pointLockMap = new Map<Point, Path>()
     function isPointLocked(path: Path) {
-        return pointLockMap.has(path.point.getId())
+        return pointLockMap.has(path.point)
     }
-
     function lockPoint(path: Path) {
-        const pointId = path.point.getId()
-        const lockedPaths = pointLockMap.get(pointId)
-        if (lockedPaths) {
-            throw new Error(`the point has locked, pointId: ${pointId}`)
-        } else {
-            pointLockMap.set(pointId, [])
-        }
+        pointLockMap.set(path.point, path)
     }
 
-    function unlockPath(path: Path) {
-        const releasePath = []
-        while (path) {
-            const pointId = path.point.getId()
-            const lockedPaths = pointLockMap.get(pointId)
-            if (lockedPaths) {
-                releasePath.push(...lockedPaths)
-                pointLockMap.delete(pointId)
+    function* findNext(path: Path): Generator<Path[], any, undefined> {
+        let nextPaths = path.children || []
+        let nextPath
+        while (nextPath = nextPaths.shift()) {
+            if (nextPath.children !== null) {
+                nextPaths.push(...nextPath.children)
+            } else {
+                const children = deriveChildren(nextPath)
+                if (children.length > 0) {
+                    nextPaths.push(...children)
+                    yield children
+                }
             }
-
-            path = path.parent as Path
-        }
-
-        return releasePath
-    }
-
-    function recordLockedPath(path: Path) {
-        const pointId = path.point.getId()
-        const lockedPaths = pointLockMap.get(pointId)
-        if (!lockedPaths) {
-            throw new Error(`the point has not locked, pointId: ${pointId}`)
-        } else {
-            lockedPaths.push(path)
-            lockedPath.push(path)
         }
     }
+
+    
 
     function pathAnalysis(firstPath: Path): Path | null {
-        const paths = [] as Path[]
+        let pathCount = 0
         let result = null
         let bestPathAssess = 1000
-        pointLockMap.clear()
 
-        deriveChildren(firstPath)
+        const recall = findNext(firstPath)
 
-        let nextPaths = [...firstPath.children]
+        const children = deriveChildren(firstPath)
+        const nextPaths = Array.from(children)
+        let i = 0
         let currentPath
-        while (currentPath = nextPaths.shift()) {
-            if(currentPath === null) {
-                console.log(currentPath)
-                debugger
-            }
+        while (i < nextPaths.length) {
+            currentPath = nextPaths[i]
             if (isTarget(currentPath)) {
+                pathCount++
                 const assess = pathAssess(currentPath)
-
                 if (assess === 0) {
                     bestPathAssess = assess
                     result = currentPath
@@ -90,42 +69,33 @@ export function CreatePathAnalyst(config: Config) {
                         bestPathAssess = assess
                         result = currentPath
                     }
-                    paths.push(currentPath)
-                    if (paths.length > 10000) {
-                        break
-                    }
-
-                    const recallPath = lockedPath.shift()
-                    if (recallPath) {
-                        nextPaths.push(recallPath)
-                        pointLockMap.clear()
-                    }
-                    continue
                 }
-            }
-
-            if (isPointLocked(currentPath)) {
-                recordLockedPath(currentPath)
-            } else {
+                if (pathCount >= 10000) {
+                    break
+                }
+            } else if (!isPointLocked(currentPath)) {
                 lockPoint(currentPath)
                 const children = deriveChildren(currentPath)
                 nextPaths.push(...children)
-                continue
             }
 
-            if (nextPaths.length === 0) {
-                const recallPath = lockedPath.shift()
-                if (recallPath) {
-                    nextPaths.push(recallPath)
+            i++
+
+            if (i === nextPaths.length) {
+                const paths = recall.next().value
+                if (paths && paths.length > 0) {
                     pointLockMap.clear()
+                    nextPaths.push(...paths)
                 }
             }
+
         }
 
+        console.log('pathCount', pathCount)
+        console.log('bestPathAssess', bestPathAssess)
+        console.log('nextPaths', nextPaths.length)
+        console.log(' ')
         pointLockMap.clear()
-        lockedPath.length = 0
-
-        console.log(paths.length)
 
         return result
     }

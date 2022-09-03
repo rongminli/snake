@@ -50,13 +50,13 @@ export function createGround(): Ground {
     ground.snake = snake
 
     ground.pause = () => {
-        if(!state.isActive) return
+        if (!state.isActive) return
         state.isActive = false
         ground.snake.pause()
     }
 
     ground.start = () => {
-        if(state.isActive) return
+        if (state.isActive) return
         state.isActive = true
         ground.snake.start()
     }
@@ -77,9 +77,7 @@ export const GroundVue = defineComponent({
             required: true
         }
     },
-    setup(props) {
-        const { ground } = props
-
+    setup({ ground }) {
         const style = {
             display: 'grid',
             grid: `repeat(${ground.row}, 1fr) / repeat(${ground.colum}, 1fr)`,
@@ -90,9 +88,13 @@ export const GroundVue = defineComponent({
 
         return () =>
             <div class="ground" style={style}>
-                {ground.cells.map(row => {
-                    return row.map(cell => <CellVue cell={cell} />)
-                })}
+                {
+                    ground.cells.map(row => {
+                        return row.map(cell => {
+                            return <CellVue cell={cell} />
+                        })
+                    })
+                }
             </div>
     }
 })
