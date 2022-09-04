@@ -16,7 +16,7 @@ export function CreateFood(ground: Ground): Food {
     function generate() {
         const spaceCell = [] as Cell[]
         ground.cells.forEach(cells => cells.forEach(cell => {
-            if (!cell.isSnakeBody()) {
+            if (cell.isSpace()) {
                 spaceCell.push(cell)
             }
         }))

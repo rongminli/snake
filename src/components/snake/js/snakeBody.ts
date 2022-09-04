@@ -44,8 +44,15 @@ export class SnakeBody extends StateFullObject<SnakeBodyState> {
     }
 
     moveTo(to: Cell) {
+        if(!to.isSpace()) {
+            debugger
+        }
+        const cells = this.state.cells
+        cells[cells.length-2].asTail()
+        cells[0].asSnakeBody()
         this.pop()
         this.unshift(to)
+        to.asHead()
     }
 
     getHead(): Cell {
@@ -54,8 +61,11 @@ export class SnakeBody extends StateFullObject<SnakeBodyState> {
 
     eat(food: Food) {
         const foodCell = food.getCurrentCell()
+        const cells = this.state.cells
+        cells[0].asSnakeBody()
         if (foodCell != null) {
             this.unshift(foodCell)
+            foodCell.asHead()
         }
     }
 

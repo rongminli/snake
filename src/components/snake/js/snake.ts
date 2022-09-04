@@ -145,20 +145,20 @@ export class SmartSnake extends Snake {
         super(ground)
         this.pathAnalyst = createSnakePathAnalyst(this.ground)
     }
-    moveOnPath(path: Path) {
-        const cell = path.shift() as Cell
+    moveOnPath(path: Path, i: number) {
+        const cell = path[i] as Cell
 
         if (cell) {
             setTimeout(() => {
-                if (cell.isFood()) {
+                if (i === path.length - 1) {
                     this.eat()
                 } else {
                     this.body.moveTo(cell)
                 }
-                this.moveOnPath(path)
-            }, 50)
-        }else {
-            setTimeout(this.auto.bind(this),0)
+                this.moveOnPath(path, ++i)
+            }, 5)
+        } else {
+            setTimeout(this.auto.bind(this), 0)
         }
 
     }
@@ -175,7 +175,7 @@ export class SmartSnake extends Snake {
                 }
                 path = path.parent
             }
-            this.moveOnPath(pathCells)
+            this.moveOnPath(pathCells, 0)
         }
 
     }

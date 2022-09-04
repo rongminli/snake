@@ -10,6 +10,8 @@ export enum CellViewState {
     SNAKE_BODY = 1,
     FOOD = 2,
     PATH = 3,
+    HEAD = 4,
+    TAIL = 5
 }
 
 type CellState = {
@@ -32,6 +34,12 @@ export class Cell {
     }
     asSpace() {
         this.changeState(CellViewState.SPACE)
+    }
+    asHead() {
+        this.changeState(CellViewState.HEAD)
+    }
+    asTail() {
+        this.changeState(CellViewState.TAIL)
     }
     asFood() {
         this.changeState(CellViewState.FOOD)
@@ -67,7 +75,7 @@ export const CellVue = defineComponent({
             required: true
         }
     },
-    setup({cell}) {
+    setup({ cell }) {
         const cellState = cell.pubState
 
         const className = computed(() => {
@@ -84,6 +92,12 @@ export const CellVue = defineComponent({
                     break
                 case CellViewState.PATH:
                     className = 'path'
+                    break
+                case CellViewState.HEAD:
+                    className = 'head'
+                    break
+                case CellViewState.TAIL:
+                    className = 'tail'
                     break
             }
             return className

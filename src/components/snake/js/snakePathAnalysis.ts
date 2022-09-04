@@ -1,11 +1,8 @@
-import { CreatePathAnalyst, Path } from "../../../js/pathAnalysis";
+import { CreatePathAnalyst, Path, Point } from "../../../js/pathAnalysis";
 import { Ground } from "../Ground";
 
 export class CellPoint {
     constructor(public x: number, public y: number) { }
-    getId() {
-        return this.x + ":" + this.y
-    }
 }
 
 type SnakePath = Path & {
@@ -75,82 +72,94 @@ export function createSnakePathAnalyst(ground: Ground) {
 
 
     function linkSpace(space: CellPoint, path: SnakePath) {
-        const linkedSpace = new Map()
+        const result = {
+            linkedSpace: new Map<Point, boolean>(),
+            findTail: false
+        }
         let nextSpacePoints = [space]
         let currentSpace
         while (currentSpace = nextSpacePoints.shift()) {
             const dirs = getDirections(currentSpace)
             dirs.forEach(dir => {
                 const point = getPoint(dir.x, dir.y)
-                if (!isSnakeBody(path, point)) {
-                    const key = point.getId()
-                    const isLinked = linkedSpace.get(key)
-                    if (!isLinked) {
-                        linkedSpace.set(key, true)
-                        nextSpacePoints.push(point)
-                    }
+                const isLinked = result.linkedSpace.get(point)
+                if (!isSnakeBody(path, point) && !isLinked) {
+                    result.linkedSpace.set(point, true)
+                    nextSpacePoints.push(point)
+                } else if (isTail(path, point)) {
+                    result.findTail = true
                 }
             })
         }
-        return linkedSpace
+        return result
     }
-    function pathAssess(path: SnakePath){
-        const linkedSpaceArea: Map<string, boolean>[] = []
+
+    function pathAssess(path: SnakePath) {
+        const linkedSpaceArea: any[] = []
         const { row, colum } = ground
 
         const spacePoints = getAddressablePoints(path)
+
         spacePoints.forEach(point => {
             if (!isLinked(point)) {
-                const linkedSpace = linkSpace(point, path)
-                linkedSpaceArea.push(linkedSpace)
+                const re = linkSpace(point, path)
+                linkedSpaceArea.push(re)
             }
         })
 
         function isLinked(point: CellPoint) {
-            if (linkedSpaceArea.length > 0) {
-                const key = point.getId()
-                return linkedSpaceArea.some(linkSpace => linkSpace.has(key))
-            } else {
-                return false
-            }
+            return linkedSpaceArea.length > 0
+                && linkedSpaceArea.some(re => re.linkedSpace.has(point))
         }
 
-        const done = () => {
-            if (path.bodyPoints) {
-                return row * colum - linkedSpaceArea[0].size - path.bodyPoints.length
-            }
-        }
+        let assess = 100
 
         if (linkedSpaceArea.length === 1) {
-            return done()
+            path.bodyPoints &&
+                (assess = row * colum - linkedSpaceArea[0].linkedSpace.size - path.bodyPoints.length)
         } else if (linkedSpaceArea.length === 0) {
-            return row * colum
+            assess = row * colum
         } else {
             let max: Map<string, Boolean> = new Map()
-            linkedSpaceArea.forEach(linkSpace => {
-                if (max.size < linkSpace.size) {
-                    max = linkSpace
+            linkedSpaceArea.forEach(re => {
+                if (max.size < re.linkedSpace.size) {
+                    max = re.linkedSpace
                 }
             })
-            return done()
+            path.bodyPoints &&
+                (assess = row * colum - max.size - path.bodyPoints.length)
         }
+
+        assess > 0 &&
+            linkedSpaceArea.some(re => {
+                if (re.findTail && path.bodyPoints) {
+                    assess = (row * colum - re.linkedSpace.size - path.bodyPoints.length) / 2
+                    return true
+                }
+            })
+
+
+        return assess
     }
 
     function isSnakeBody(path: SnakePath, point: CellPoint) {
         return path.bodyPoints?.includes(point)
     }
 
+    function isTail(path: SnakePath, point: CellPoint) {
+        return path.bodyPoints
+            && point === path.bodyPoints[path.bodyPoints?.length - 1]
+    }
+
     function createBody(path: SnakePath) {
-        if (path.parent) {
+        if (path.parent && path.parent.bodyPoints) {
             const parentBody = path.parent.bodyPoints
-            if (parentBody) {
-                const currentBody = Array.from(parentBody)
-                currentBody.unshift(path.point)
-                if (!isTarget(path)) {
-                    currentBody.pop()
-                }
-                path.bodyPoints = currentBody
-            }
+            const currentBody = Array.from(parentBody)
+
+            currentBody.unshift(path.point)
+            !isTarget(path) && currentBody.pop()
+
+            path.bodyPoints = currentBody
         }
     }
 
@@ -184,11 +193,8 @@ export function createSnakePathAnalyst(ground: Ground) {
         let parent = path.parent
         while (parent) {
             if (isBodySame(path, parent)) {
-                if (flag) {
-                    return true
-                } else {
-                    flag = true
-                }
+                if (flag) return true
+                else flag = true
             } else {
                 parent = parent.parent
             }
@@ -196,19 +202,15 @@ export function createSnakePathAnalyst(ground: Ground) {
         return false
     }
 
-    function isNerbyBody(path: SnakePath, point: CellPoint) {
-        const dir = getDirections(point)
-        return dir.some(d => {
-            const p = getPoint(d.x, d.y)
-            return p !== path.point && isSnakeBody(path, p)
-        })
-    }
-
     /**
      * 从当前路径派生子路径
      * @param path 
      */
     function deriveChildren(path: SnakePath) {
+        if (isTarget(path)) {
+            return path.children = []
+        }
+
         let children = path.children
         if (children && children.length > 0) {
             return children
@@ -216,7 +218,7 @@ export function createSnakePathAnalyst(ground: Ground) {
             children = path.children = []
         }
 
-        const addressablePoints: CellPoint[] = getAddressablePoints(path)
+        const addressablePoints = getAddressablePoints(path)
         addressablePoints.forEach(p => {
             const newPath = {
                 parent: path,
@@ -224,21 +226,15 @@ export function createSnakePathAnalyst(ground: Ground) {
                 distance: path.distance + 1,
                 children: null
             } as SnakePath
+
             createBody(newPath)
 
-            if (isCycle(newPath)) {
-                console.log('cycle..')
-                return
-            }
-
-            if (p.x === 0 || p.y === 0) {
-                children?.unshift(newPath)
-            } else {
+            p.x === 0 || p.y === 0 ?
+                children?.unshift(newPath) :
                 children?.push(newPath)
-            }
         })
 
-        // path.bodyPoints = null
+        path.bodyPoints = null
 
         return children
     }
