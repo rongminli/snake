@@ -1,6 +1,5 @@
 import { defineComponent, PropType } from "vue";
 import { Ground } from "./Ground";
-import { CellPoint, createSnakePathAnalyst } from "./js/snakePathAnalysis";
 
 export const DashboardVue = defineComponent({
     props: {
@@ -11,7 +10,7 @@ export const DashboardVue = defineComponent({
     },
 
     setup({ ground }) {
-        const snakeBodyState = ground.snake.body.state
+        const snakeBodyCells = ground.snake.body.cells
         const groundState = ground.state
 
         return () =>
@@ -22,10 +21,10 @@ export const DashboardVue = defineComponent({
                 <button onClick={ground.restart}>
                     重置
                 </button>
-                <button onClick={ground.snake.auto.bind(ground.snake)}>
+                {/* <button onClick={ground.snake.auto.bind(ground.snake)}>
                     自动
-                </button>
-                <div>积分：{snakeBodyState.cells.length}</div>
+                </button> */}
+                <div>积分：{snakeBodyCells.length}</div>
             </div>
     }
 })

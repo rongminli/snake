@@ -83,7 +83,7 @@ export function createSnakePathAnalyst(ground: Ground) {
             dirs.forEach(dir => {
                 const point = getPoint(dir.x, dir.y)
                 const isLinked = result.linkedSpace.get(point)
-                if (!isSnakeBody(path, point) && !isLinked) {
+                if (!(isSnakeBody(path, point) || isLinked)) {
                     result.linkedSpace.set(point, true)
                     nextSpacePoints.push(point)
                 } else if (isTail(path, point)) {
@@ -152,7 +152,7 @@ export function createSnakePathAnalyst(ground: Ground) {
     }
 
     function createBody(path: SnakePath) {
-        if (path.parent && path.parent.bodyPoints) {
+        if (path.parent?.bodyPoints) {
             const parentBody = path.parent.bodyPoints
             const currentBody = Array.from(parentBody)
 
@@ -239,12 +239,13 @@ export function createSnakePathAnalyst(ground: Ground) {
         return children
     }
 
-
-    const analyst = CreatePathAnalyst({
+    const config = {
         isTarget,
         deriveChildren,
         pathAssess
-    })
+    }
+
+    const analyst = CreatePathAnalyst(config)
 
     return () => {
         const head = ground.snake.body.getHead()

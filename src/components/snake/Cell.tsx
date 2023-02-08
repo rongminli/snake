@@ -1,17 +1,17 @@
 import { computed, defineComponent, PropType, reactive, readonly, UnwrapNestedRefs } from "vue";
 
-export interface Point {
+export interface Coord {
     x: number,
     y: number
 }
 
 export enum CellViewState {
-    SPACE = 0,
-    SNAKE_BODY = 1,
-    FOOD = 2,
-    PATH = 3,
-    HEAD = 4,
-    TAIL = 5
+    SPACE = 'space',
+    SNAKE_BODY = 'snake-body',
+    FOOD = 'food',
+    PATH = 'path',
+    HEAD = 'head',
+    TAIL = 'tail'
 }
 
 type CellState = {
@@ -21,14 +21,16 @@ type CellState = {
 export class Cell {
     private state: UnwrapNestedRefs<CellState>
     public pubState
-    point: Point
-    constructor(position: Point) {
+    coord: Coord
+
+    constructor(coord: Coord) {
         this.state = reactive<CellState>({
             viewState: CellViewState.SPACE,
         })
         this.pubState = readonly(this.state)
-        this.point = position
+        this.coord = coord
     }
+
     private changeState(viewState: CellViewState) {
         this.state.viewState = viewState
     }
@@ -50,6 +52,7 @@ export class Cell {
     asPath() {
         this.changeState(CellViewState.PATH)
     }
+
     isSpace() {
         return this.state.viewState === CellViewState.SPACE
     }
@@ -64,8 +67,8 @@ export class Cell {
     }
 }
 
-export function createCell(position: Point): Cell {
-    return new Cell(position)
+export function createCell(coord: Coord): Cell {
+    return new Cell(coord)
 }
 
 export const CellVue = defineComponent({
@@ -104,6 +107,6 @@ export const CellVue = defineComponent({
         })
 
         return () =>
-            <div class={'cell ' + className.value}></div>
+            <div class={`cell ${className.value}`} />
     }
 })

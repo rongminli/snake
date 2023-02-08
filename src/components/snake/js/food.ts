@@ -1,47 +1,54 @@
-import { DeepReadonly, reactive, readonly, shallowReadonly, UnwrapNestedRefs } from 'vue'
 import { Cell } from '../Cell'
 import { Ground } from '../Ground'
+import { flatForEach, event } from '../utils'
+import { SnakeBody } from './snakeBody'
 
-export type FoodState = {
-    currentCell: Cell | null
+export enum Events {
+    VICTORY = 'victor'
 }
-export interface Food {
-    reset(): void
-    getCurrentCell(): Cell
-    generate(): void
-}
-export function CreateFood(ground: Ground): Food {
-    let currentCell: Cell
 
-    function generate() {
+export class Food {
+    public cell: Cell | null = null
+    constructor(private ground: Ground) {    }
+   
+    private generate() {
+        if(this.cell?.isFood()) {
+            console.warn('already have food')
+            return
+        }
+
         const spaceCell = [] as Cell[]
-        ground.cells.forEach(cells => cells.forEach(cell => {
-            if (cell.isSpace()) {
-                spaceCell.push(cell)
-            }
-        }))
-        const index = Math.random() * spaceCell.length - 1 | 0
-        const randomCell = spaceCell[index]
-        randomCell.asFood()
-        currentCell = randomCell
-    }
+        const groundCells = this.ground.cells
+        flatForEach(groundCells, (cell: Cell) => cell.isSpace() && spaceCell.push(cell))
 
-    const food = {
-        getCurrentCell() {
-            return currentCell
-        },
-        generate,
-        reset() {
-            currentCell.asSpace()
-            generate()
+        switch(spaceCell.length) {
+            case 0 : event.trigger(Events.VICTORY); break;
+            case 1 : this.cell = spaceCell[0]; break ;
+            default : {
+                const randomIndex = Math.random() * spaceCell.length - 1 | 0
+                const randomCell = spaceCell[randomIndex]
+        
+                randomCell.asFood()
+                this.cell = randomCell
+            }
         }
     }
 
-    function init() {
-        food.generate()
+    public eat(snakeBody: SnakeBody) {
+        if(this.cell) {
+            this.cell.asHead()
+            snakeBody.cells[0].asSnakeBody()
+            snakeBody.cells.unshift(this.cell)
+            this.cell = null
+            this.next()
+        }
     }
 
-    init()
-
-    return food
+    next() {
+        this.cell?.asSpace()
+        this.cell = null
+        this.generate()
+    }
 }
+
+

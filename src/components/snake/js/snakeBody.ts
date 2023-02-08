@@ -1,9 +1,7 @@
-import { DeepReadonly, reactive, readonly, shallowReadonly, UnwrapNestedRefs } from "vue";
+import { reactive, shallowReadonly, UnwrapNestedRefs } from "vue";
 import { Cell } from "../Cell";
 import { Ground } from "../Ground";
 import { Food } from "./food";
-
-
 
 export class StateFullObject<T extends object> {
     readonly state
@@ -19,35 +17,31 @@ export type SnakeBodyState = {
     cells: Cell[]
 }
 
-export class SnakeBody extends StateFullObject<SnakeBodyState> {
+export class SnakeBody {
+    public cells: Cell[]
     constructor(private ground: Ground) {
-        super({
-            cells: []
-        })
+        this.cells = []
         this.unshift(ground.cells[0][0])
         this.unshift(ground.cells[0][1])
     }
     private unshift(cell: Cell){
         cell.asSnakeBody()
-        this.state.cells.unshift(cell)
+        this.cells.unshift(cell)
     }
 
     private pop(){
-        const snakeTail = this.state.cells.pop()
+        const snakeTail = this.cells.pop()
         snakeTail?.asSpace()
     }
 
     private clear() {
-        const cells = this.state.cells
+        const cells = this.cells
         cells.forEach(cell => cell.asSpace())
         cells.length = 0
     }
 
     moveTo(to: Cell) {
-        if(!to.isSpace()) {
-            debugger
-        }
-        const cells = this.state.cells
+        const cells = this.cells
         cells[cells.length-2].asTail()
         cells[0].asSnakeBody()
         this.pop()
@@ -56,20 +50,14 @@ export class SnakeBody extends StateFullObject<SnakeBodyState> {
     }
 
     getHead(): Cell {
-        return this.state.cells[0] as Cell
+        return this.cells[0] as Cell
     }
 
     eat(food: Food) {
-        const foodCell = food.getCurrentCell()
-        const cells = this.state.cells
-        cells[0].asSnakeBody()
-        if (foodCell != null) {
-            this.unshift(foodCell)
-            foodCell.asHead()
-        }
+        food.eat(this)
     }
 
-    restart() {
+    reset() {
         this.clear()
         this.unshift(this.ground.cells[0][0])
         this.unshift(this.ground.cells[0][1])

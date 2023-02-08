@@ -8,36 +8,34 @@ export type Path = {
     distance: number
 }
 
-export interface Config {
+export interface Options {
     isTarget(path: Path): boolean,
     deriveChildren(path: Path): Path[],
     pathAssess(path: unknown): number
 }
 
-export function CreatePathAnalyst(config: Config) {
+export function CreatePathAnalyst(config: Options) {
 
-    const { isTarget, deriveChildren, pathAssess } = config
+    function pathAnalysis(firstPath: Path): Path | null {
 
-    function* recallPath(path: Path): Generator<Path[], any, undefined> {
-        let nextPaths = [path]
-        let nextPath
-        while (nextPath = nextPaths.shift()) {
-            if (nextPath.children !== null) {
-                nextPaths.push(...nextPath.children)
-            } else {
-                const children = deriveChildren(nextPath)
+        const { isTarget, deriveChildren, pathAssess } = config
 
-                if (children.length > 0) {
-                    nextPaths.push(...children)
-                    yield children
+        function* recallPath(path: Path): Generator<Path[], void, Path[]> {
+            let nextPaths = [path]
+            let nextPath
+            while (nextPath = nextPaths.shift()) {
+                if (nextPath.children !== null) {
+                    nextPaths.push(...nextPath.children)
+                } else {
+                    const children = deriveChildren(nextPath)
+
+                    if (children.length > 0) {
+                        nextPaths.push(...children)
+                        yield children
+                    }
                 }
             }
         }
-    }
-
-
-
-    function pathAnalysis(firstPath: Path): Path | null {
 
         const pointLockMap = new Map<Point, Path>()
 
@@ -58,7 +56,7 @@ export function CreatePathAnalyst(config: Config) {
         let i = 0
         let currentPath
         const nextPaths = [firstPath]
-        
+
         while (i < nextPaths.length) {
             currentPath = nextPaths[i]
 
@@ -96,12 +94,6 @@ export function CreatePathAnalyst(config: Config) {
             }
 
         }
-
-        console.log('pathCount', pathCount)
-        console.log('bestPathAssess', bestPathAssess)
-        console.log('nextPaths', nextPaths.length)
-        console.log(' ')
-
         return result
     }
 

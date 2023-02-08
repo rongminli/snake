@@ -1,7 +1,7 @@
 import { defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
 import { Cell, createCell, CellVue } from './Cell';
-import { CreateFood, Food } from './js/food';
-import { CreateSmartSnake, CreateSnake, SmartSnake, Snake } from './js/snake';
+import { Food } from './js/food';
+import { Snake } from './js/snake';
 
 export type GroundState = {
     isActive: Boolean
@@ -12,7 +12,7 @@ export interface Ground {
     row: number,
     colum: number,
     cells: Cell[][],
-    snake: Snake | SmartSnake,
+    snake: Snake,
     food: Food,
     pause(): void,
     start(): void,
@@ -43,8 +43,9 @@ export function createGround(): Ground {
     } as Ground
 
     fillGround(ground)
-    const snake = CreateSmartSnake(ground)
-    const food = CreateFood(ground)
+    const snake = new Snake(ground)
+    const food = new Food(ground)
+    food.next()
 
     ground.food = food
     ground.snake = snake
@@ -63,8 +64,8 @@ export function createGround(): Ground {
 
     ground.restart = () => {
         state.isActive = false
-        ground.snake.restart()
-        ground.food.reset()
+        ground.snake.reset()
+        ground.food.next()
     }
 
     return ground
@@ -90,9 +91,7 @@ export const GroundVue = defineComponent({
             <div class="ground" style={style}>
                 {
                     ground.cells.map(row => {
-                        return row.map(cell => {
-                            return <CellVue cell={cell} />
-                        })
+                        return row.map(cell => <CellVue cell={cell} />)
                     })
                 }
             </div>
