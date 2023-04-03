@@ -11,6 +11,8 @@ export interface Ground {
     row: number,
     colum: number,
     cells: Cell[][],
+    snake: SmartSnake,
+    food: Food,
     pause(): void,
     start(): void,
     restart(): void,
