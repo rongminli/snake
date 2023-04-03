@@ -16,7 +16,7 @@ type Direction = { x: number, y: number }
 
 function getPoints(ground: Ground) {
     const cellPoints: CellPoint[][] = []
-    let { row, colum } = ground
+    const { row, colum } = ground
 
     for (let i = 0; i < colum; i++) {
         const arr = cellPoints[i] || (cellPoints[i] = [])
@@ -45,28 +45,22 @@ export function createSnakePathAnalyst(ground: Ground) {
     function getDirections(point: CellPoint): Direction[] {
         const { row, colum } = ground
         const { x, y } = point
-
         const dirs = []
-        x > 0 && dirs.push({ x: x - 1, y })
-        x < row - 1 && dirs.push({ x: x + 1, y })
-        y > 0 && dirs.push({ x, y: y - 1 })
-        y < colum - 1 && dirs.push({ x, y: y + 1 })
-
+        x > 0           &&  dirs.push({ x: x - 1,   y: y })
+        x < row - 1     &&  dirs.push({ x: x + 1,   y: y })
+        y > 0           &&  dirs.push({ x: x,       y: y - 1 })
+        y < colum - 1   &&  dirs.push({ x: x,       y: y + 1 })
         return dirs
     }
 
-    const getAddressablePoints = (path: SnakePath): CellPoint[] => {
+    const getAccessiblePoints = (path: SnakePath): CellPoint[] => {
         const points = [] as CellPoint[]
-
         const dirs = getDirections(path.point)
-        dirs.forEach(direction => {
+        for (const direction of dirs) {
             const { x, y } = direction
             const nextPoint = getPoint(x, y)
-            if (!isSnakeBody(path, nextPoint)) {
-                points.push(nextPoint)
-            }
-        })
-
+            !isSnakeBody(path, nextPoint) && points.push(nextPoint)
+        }
         return points
     }
 
@@ -76,7 +70,7 @@ export function createSnakePathAnalyst(ground: Ground) {
             linkedSpace: new Map<Point, boolean>(),
             findTail: false
         }
-        let nextSpacePoints = [space]
+        const nextSpacePoints = [space]
         let currentSpace
         while (currentSpace = nextSpacePoints.shift()) {
             const dirs = getDirections(currentSpace)
@@ -98,7 +92,7 @@ export function createSnakePathAnalyst(ground: Ground) {
         const linkedSpaceArea: any[] = []
         const { row, colum } = ground
 
-        const spacePoints = getAddressablePoints(path)
+        const spacePoints = getAccessiblePoints(path)
 
         spacePoints.forEach(point => {
             if (!isLinked(point)) {
@@ -206,7 +200,7 @@ export function createSnakePathAnalyst(ground: Ground) {
      * 从当前路径派生子路径
      * @param path 
      */
-    function deriveChildren(path: SnakePath) {
+    function deriveChildren(path: SnakePath): Path[] {
         if (isTarget(path)) {
             return path.children = []
         }
@@ -218,7 +212,7 @@ export function createSnakePathAnalyst(ground: Ground) {
             children = path.children = []
         }
 
-        const addressablePoints = getAddressablePoints(path)
+        const addressablePoints = getAccessiblePoints(path)
         addressablePoints.forEach(p => {
             const newPath = {
                 parent: path,
@@ -251,23 +245,26 @@ export function createSnakePathAnalyst(ground: Ground) {
         const head = ground.snake.body.getHead()
         const body = [] as CellPoint[]
 
-        const snakeBody = ground.snake.body.state.cells
+        const snakeBody = ground.snake.body.cells
         snakeBody.forEach(cell => {
-            const { x, y } = cell.point
+            const { x, y } = cell.coord
             body.push(getPoint(x, y))
         })
 
-        const path = {
+        const firstPath = {
             parent: null,
             distance: 0,
-            point: getPoint(head.point.x, head.point.y),
+            point: getPoint(head.coord.x, head.coord.y),
             children: [],
             bodyPoints: body
         }
 
-        const food = ground.food.getCurrentCell()
-        target = getPoint(food.point.x, food.point.y)
+        const foodCell = ground.food.cell
+        if (foodCell)
+            target = getPoint(foodCell.coord.x, foodCell.coord.y)
+        else
+            throw new Error('target not founded')
 
-        return analyst(path)
+        return analyst(firstPath)
     }
 }

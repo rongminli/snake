@@ -17,11 +17,13 @@ export interface Options {
 export function CreatePathAnalyst(config: Options) {
 
     function pathAnalysis(firstPath: Path): Path | null {
+        let timeout = false
+        setTimeout(()=>timeout = true, 10)
 
         const { isTarget, deriveChildren, pathAssess } = config
 
         function* recallPath(path: Path): Generator<Path[], void, Path[]> {
-            let nextPaths = [path]
+            const nextPaths = [path]
             let nextPath
             while (nextPath = nextPaths.shift()) {
                 if (nextPath.children !== null) {
@@ -57,9 +59,8 @@ export function CreatePathAnalyst(config: Options) {
         let currentPath
         const nextPaths = [firstPath]
 
-        while (i < nextPaths.length) {
-            currentPath = nextPaths[i]
-
+        while (currentPath = nextPaths.shift()) {
+            if(timeout) throw new Error('timeout in 10 second')
             if (isTarget(currentPath)) {
                 pathCount++
 
@@ -82,10 +83,7 @@ export function CreatePathAnalyst(config: Options) {
                 const children = deriveChildren(currentPath)
                 nextPaths.push(...children)
             }
-
-            i++
-
-            if (i === nextPaths.length) {
+            if (nextPaths.length === 0) {
                 const paths = recall.next().value
                 if (paths && paths.length > 0) {
                     pointLockMap.clear()

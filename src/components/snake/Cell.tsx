@@ -1,4 +1,5 @@
 import { computed, defineComponent, PropType, reactive, readonly, UnwrapNestedRefs } from "vue";
+import { settingsStore } from '@/stores/settings';
 
 export interface Coord {
     x: number,
@@ -7,7 +8,7 @@ export interface Coord {
 
 export enum CellViewState {
     SPACE = 'space',
-    SNAKE_BODY = 'snake-body',
+    SNAKE_BODY = 'snakeBody',
     FOOD = 'food',
     PATH = 'path',
     HEAD = 'head',
@@ -80,33 +81,16 @@ export const CellVue = defineComponent({
     },
     setup({ cell }) {
         const cellState = cell.pubState
+        const settings = settingsStore()
 
-        const className = computed(() => {
-            let className = ''
-            switch (cellState.viewState) {
-                case CellViewState.SPACE:
-                    className = 'space'
-                    break
-                case CellViewState.SNAKE_BODY:
-                    className = 'snake-body'
-                    break
-                case CellViewState.FOOD:
-                    className = 'food'
-                    break
-                case CellViewState.PATH:
-                    className = 'path'
-                    break
-                case CellViewState.HEAD:
-                    className = 'head'
-                    break
-                case CellViewState.TAIL:
-                    className = 'tail'
-                    break
-            }
-            return className
+        const color = computed(() => {
+            return settings.colors[cellState.viewState.toString() as keyof typeof settings.colors]
         })
 
+
         return () =>
-            <div class={`cell ${className.value}`} />
+            <div style={{ backgroundColor: color.value, margin: '1px' }}>{
+               settings.view.showCoord && `${cell.coord.x}:${cell.coord.y}`
+            }</div>
     }
 })

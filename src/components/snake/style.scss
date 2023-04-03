@@ -11,6 +11,12 @@
     background-color: #333333;
 }
 
+#app {
+    display: flex;
+}
+.snakeContainer {
+    margin: 50px auto;
+}
 .food {
     background-color: rgb(163, 207, 28);
 }

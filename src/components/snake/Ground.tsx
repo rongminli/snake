@@ -1,8 +1,7 @@
 import { defineComponent, PropType, UnwrapNestedRefs, DeepReadonly, reactive, readonly } from 'vue';
 import { Cell, createCell, CellVue } from './Cell';
 import { Food } from './js/food';
-import { Snake } from './js/snake';
-
+import { SmartSnake } from './js/smartSnake';
 export type GroundState = {
     isActive: Boolean
 }
@@ -12,8 +11,6 @@ export interface Ground {
     row: number,
     colum: number,
     cells: Cell[][],
-    snake: Snake,
-    food: Food,
     pause(): void,
     start(): void,
     restart(): void,
@@ -32,7 +29,7 @@ function fillGround(ground: Ground) {
     ground.cells = cells
 }
 
-export function createGround(): Ground {
+function createGround(): Ground {
     const state = reactive<GroundState>({
         isActive: false
     })
@@ -43,7 +40,7 @@ export function createGround(): Ground {
     } as Ground
 
     fillGround(ground)
-    const snake = new Snake(ground)
+    const snake = new SmartSnake(ground)
     const food = new Food(ground)
     food.next()
 
@@ -71,22 +68,16 @@ export function createGround(): Ground {
     return ground
 }
 
+export const ground = createGround()
 export const GroundVue = defineComponent({
-    props: {
-        ground: {
-            type: Object as PropType<Ground>,
-            required: true
-        }
-    },
-    setup({ ground }) {
+    setup() {
+        onblur = () => ground.pause()
         const style = {
             display: 'grid',
             grid: `repeat(${ground.row}, 1fr) / repeat(${ground.colum}, 1fr)`,
-            border: '1px solid #ddd',
             height: '600px',
             width: '600px',
         }
-
         return () =>
             <div class="ground" style={style}>
                 {

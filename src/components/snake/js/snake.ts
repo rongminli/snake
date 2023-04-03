@@ -1,4 +1,5 @@
-import { reactive, UnwrapNestedRefs } from "vue"
+import { message } from "ant-design-vue"
+import { reactive, UnwrapNestedRefs, watchEffect } from "vue"
 import { Cell } from "../Cell"
 import { Ground } from "../Ground"
 import { SnakeBody } from "./snakeBody"
@@ -16,7 +17,7 @@ export type SnakeState = {
 }
 
 export class Snake {
-    private moveTimer!: number
+    public moveTimer: NodeJS.Timer | null = null
     public state: UnwrapNestedRefs<SnakeState>
     public body: SnakeBody
 
@@ -28,6 +29,7 @@ export class Snake {
         this.body = new SnakeBody(ground)
 
         addEventListener('keydown', event => this.keydownHandler(event))
+        watchEffect(() => this.state.speed,)
     }
 
     private keydownHandler(event: KeyboardEvent) {
@@ -51,7 +53,7 @@ export class Snake {
         }
     }
 
-    private nextCell(): Cell {
+    private nextCell(): Cell | void {
         const { body, state: snakeState, ground } = this
 
         const headCell = body.getHead()
@@ -62,23 +64,27 @@ export class Snake {
 
         switch (snakeState.direction) {
             case Direction.LEFT:
-                if (x === 0) throw new Error('Out of bound')
-                x--
+                if (x === 0) return this.outRange()
                 break
             case Direction.UP:
-                if (y === 0) throw new Error('Out of bound')
+                if (y === 0) return this.outRange()
                 y--
                 break
             case Direction.RIGHT:
-                if (x === maxX - 1) throw new Error('Out of bound')
+                if (x === maxX - 1) return this.outRange()
                 x++
                 break
             case Direction.DOWN:
-                if (y === maxY - 1) throw new Error('Out of bound')
+                if (y === maxY - 1) return this.outRange()
                 y++
                 break
         }
         return ground.cells[y][x]
+    }
+
+    private outRange() {
+        this.pause()
+        message.error('out range', 1.5)
     }
 
     protected eat() {
@@ -87,20 +93,16 @@ export class Snake {
     }
 
     private step() {
-        let to: Cell
-
-        try {
-            to = this.nextCell()
-        } catch (error) {
-            this.pause()
-            alert(error)
+        const to = this.nextCell()
+        if (!to) {
             return
         }
 
         if (to.isFood()) {
             this.eat()
         } else if (to.isSnakeBody()) {
-            alert('You eat your self')
+            this.pause()
+            message.error('You eat your self', 1.5);
             return
         } else {
             this.body.moveTo(to)
@@ -108,20 +110,17 @@ export class Snake {
     }
 
     pause() {
-        clearTimeout(this.moveTimer)
-        this.moveTimer = 0
+        this.moveTimer
+            ? clearTimeout(this.moveTimer)
+            : this.moveTimer = null
     }
 
     move() {
-        if (this.moveTimer) {
-            return
-        }
-
-        const speed = this.state.speed || 500
-        this.moveTimer = setInterval(
-            () => this.step(),
-            speed
+        this.moveTimer = setTimeout(
+            this.move.bind(this),
+            this.state.speed
         )
+        this.step()
     }
 
     start() {

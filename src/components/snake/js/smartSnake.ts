@@ -1,15 +1,20 @@
 import { Snake } from "./snake"
-import { Ground } from "../Ground"
+import { ground , Ground} from "../Ground"
 import { CellPoint, createSnakePathAnalyst } from "./snakePathAnalysis"
 import { Cell } from "../Cell"
+import searchPath4Snake from "@/js/searchPath4Snake"
 
 type Path = Cell[]
+
+export function CreateSmartSnake(ground: Ground) {
+    return new SmartSnake(ground)
+}
 
 export class SmartSnake extends Snake {
     private pathAnalyst
     constructor(ground: Ground) {
         super(ground)
-        this.pathAnalyst = createSnakePathAnalyst(this.ground)
+        this.pathAnalyst = searchPath4Snake(ground)
     }
     moveOnPath(path: Path, i: number) {
         const cell = path[i] as Cell
@@ -21,7 +26,7 @@ export class SmartSnake extends Snake {
                     this.body.moveTo(cell)
                 }
                 this.moveOnPath(path, ++i)
-            }, 5)
+            }, 50)
         } else {
             setTimeout(this.auto.bind(this), 0)
         }
@@ -31,8 +36,8 @@ export class SmartSnake extends Snake {
         let path = this.pathAnalyst()
         if (path) {
             const pathCells = []
-            while (path) {
-                const point = path.point as CellPoint
+            while (path.parent) {
+                const point = path.node as CellPoint
                 const cell = this.ground.cells[point.y][point.x]
                 pathCells.unshift(cell)
                 path = path.parent
@@ -43,6 +48,3 @@ export class SmartSnake extends Snake {
     }
 }
 
-export function CreateSmartSnake(ground: Ground) {
-    return new SmartSnake(ground)
-}
