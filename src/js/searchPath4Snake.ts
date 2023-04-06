@@ -15,9 +15,9 @@ function initArea(ground: Ground) {
     const x = ground.cells[0].length
     const nodes: Node[][] = Array(y)
     for (let i = 0; i < y; i++) {
-        const ar = Array(y)
+        const ar: Node[] = Array(y)
         for (let j = 0; j < x; j++) {
-            ar[j] = { x: j, y: i }
+            ar[j] = { x: j, y: i, isLocked: false }
         }
         nodes[i] = ar
     }
@@ -65,13 +65,19 @@ function isCycle(pathNode: PathNode, node: Node) {
     return false
 }
 
-const checkNodeAndPush = (node: Node, pathNode: PathNode, currentBodyNodes: Node[], accessibleNodes: Node[]) => {
-    if (currentBodyNodes.includes(node)) {
-        if (node === currentBodyNodes[currentBodyNodes.length - 1])
-            accessibleNodes.push(node)
-    } else {
-        accessibleNodes.push(node)
+function isFutilePath(pathNode: PathNode) {
+    const currentBodyNodes = getCurrentBodyNodes(pathNode)
+    for (let i = 0; i < currentBodyNodes.length; i++) {
+        if (currentBodyNodes[i] !== bodyNodes[i])
+            return false
     }
+    return true
+}
+const checkNodeAndPush = (node: Node, pathNode: PathNode, currentBodyNodes: Node[], accessibleNodes: Node[]) => {
+    (!currentBodyNodes.includes(node)
+        || node === currentBodyNodes[currentBodyNodes.length - 1])
+        // && !isCycle(pathNode, node)
+        && accessibleNodes.push(node)
 }
 
 const getAccessibleNodes = (pathNode: PathNode): Node[] => {
@@ -130,11 +136,17 @@ function assessmentOut() {
 }
 
 function needAssessment() {
-    return assessmentDeep < 1
+    if (bodyNodes.length === 99) return false
+    return bodyNodes.length > 50
+        ? bodyNodes.length > 95
+            ? assessmentDeep < 3
+            : assessmentDeep < 2
+        : assessmentDeep < 1
 }
 
 function pathAssessment(pathNode: PathNode) {
-    if (!needAssessment()) {
+    console.log('pathAssessment', bodyNodes.length)
+    if(!needAssessment()) {
         return true
     }
     assessmentIn(pathNode)
@@ -146,11 +158,10 @@ function pathAssessment(pathNode: PathNode) {
                 const options: SearchPathOptions = {
                     firstNode,
                     target: node,
-                    pathAssessment,
+                    pathAssessment: pathAssessment,
                     derive
                 }
                 const path = searchPath(options)
-                console.log(bodyNodes.length, assessmentDeep, !!path)
                 if (!path) {
                     assessmentOut()
                     return false
@@ -163,32 +174,27 @@ function pathAssessment(pathNode: PathNode) {
 }
 
 function pathAssessment_1(pathNode: PathNode) {
-    console.log('pathAssessment_1')
-    if (!needAssessment() || bodyNodes.length === 99) {
-        return true
-    }
     assessmentIn(pathNode)
+    console.log('pathAssessment_1', bodyNodes.length)
     const options: SearchPathOptions = {
         firstNode: pathNode.node,
         target: bodyNodes[bodyNodes.length - 1],
-        pathAssessment: pathAssessment_1,
+        pathAssessment: () => true,
         derive
     }
     let path = searchPath(options)
-    if (!path) {
-        assessmentOut()
+    assessmentOut()
+    if (!path || !path.parent) {
         return false
     }
     // let pathLen = 0
     // while (path.parent) {
     //     pathLen++
-    //     if (pathLen > 1) {
-    //         assessmentOut()
+    //     if ((bodyNodes.length < 98 && pathLen > 3) || pathLen > 2) {
     //         return true
     //     }
     //     path = path.parent
     // }
-    assessmentOut()
     return true
 }
 
@@ -202,14 +208,12 @@ export default function (ground: Ground) {
             message.error('food is not instance yet')
             return
         }
-
         const head = snake.body.getHead()
         const { x: foodX, y: foodY } = ground.food.cell.coord
-        const target = area[foodY][foodX]
         const options: SearchPathOptions = {
-            firstNode: head.coord,
-            target: target,
-            pathAssessment: pathAssessment_1,
+            firstNode: area[head.coord.y][head.coord.x],
+            target: area[foodY][foodX],
+            pathAssessment,
             derive
         }
         return searchPath(options)

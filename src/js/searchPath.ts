@@ -5,7 +5,8 @@ export type PathNode = {
 
 export type Node = {
     x: number,
-    y: number
+    y: number,
+    isLocked: Boolean
 }
 
 export type SearchPathOptions = {
@@ -18,18 +19,22 @@ export type SearchPathOptions = {
 const isTarget = (node: Node, target: Node) => {
     return node === target
 }
-const isNodeLocked = (path: PathNode, lockedNode: Node[]) => {
-    return lockedNode.includes(path.node)
+const isNodeLocked = (path: PathNode) => {
+    return path.node.isLocked
 }
 const lockNode = (node: Node, lockedNode: Node[]) => {
-    return lockedNode.push(node)
+    node.isLocked = true
+    lockedNode.push(node)
 }
-const recall = (nextPathNodes: PathNode[], blockedPaths: PathNode[], lockedNodes: Node[]) => {
+
+const unlockAll = (lockedNodes: Node[]) => {
+    lockedNodes.forEach(node => node.isLocked = false)
+    lockedNodes.length = 0
+}
+
+const recall = (nextPathNodes: PathNode[], blockedPaths: PathNode[]) => {
     const blockedPath = blockedPaths.shift()
-    if (blockedPath) {
-        nextPathNodes.push(blockedPath)
-        lockedNodes.length = 0
-    }
+    blockedPath && nextPathNodes.push(blockedPath)
 }
 
 export function searchPath(options: SearchPathOptions) {
@@ -46,8 +51,8 @@ export function searchPath(options: SearchPathOptions) {
         parent: null,
         children: [],
         node: firstNode,
-        assessmentCount: 0
     }
+
     nextPathNodes.push(firstPathNode)
     let count = 0
     let next
@@ -55,23 +60,29 @@ export function searchPath(options: SearchPathOptions) {
         count++
         if (count > 2000000) {
             console.log(count)
+            unlockAll(lockedNodes)
             return false
         }
         if (isTarget(next.node, target)) {
+            unlockAll(lockedNodes)
             if (pathAssessment(next)) {
                 return next
             } else {
-                recall(nextPathNodes, blockedPaths, lockedNodes)
+                recall(nextPathNodes, blockedPaths)
+            }
+        } else {
+            if (isNodeLocked(next)) {
+                blockedPaths.push(next)
+            } else {
+                lockNode(next.node, lockedNodes)
+                const childrenNode = derive(next)
+                nextPathNodes = nextPathNodes.concat(childrenNode)
             }
         }
-        if (isNodeLocked(next, lockedNodes)) {
-            blockedPaths.push(next)
-        } else {
-            lockNode(next.node, lockedNodes)
-            const childrenNode = derive(next)
-            nextPathNodes = nextPathNodes.concat(childrenNode)
-        }
 
-        nextPathNodes.length === 0 && recall(nextPathNodes, blockedPaths, lockedNodes)
+        if (nextPathNodes.length === 0) {
+            unlockAll(lockedNodes)
+            recall(nextPathNodes, blockedPaths)
+        }
     }
 }

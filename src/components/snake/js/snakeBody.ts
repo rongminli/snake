@@ -8,7 +8,7 @@ export class StateFullObject<T extends object> {
     constructor(state: T) {
         this.state = reactive(state)
     }
-    getState() : Readonly<UnwrapNestedRefs<T>> {
+    getState(): Readonly<UnwrapNestedRefs<T>> {
         return shallowReadonly(this.state)
     }
 }
@@ -21,17 +21,12 @@ export class SnakeBody {
     public cells: Cell[]
     constructor(private ground: Ground) {
         this.cells = []
-        this.unshift(ground.cells[0][0])
-        this.unshift(ground.cells[0][1])
-    }
-    private unshift(cell: Cell){
-        cell.asSnakeBody()
-        this.cells.unshift(cell)
-    }
-
-    private pop(){
-        const snakeTail = this.cells.pop()
-        snakeTail?.asSpace()
+        ground.cells[0][0].asTail()
+        ground.cells[0][1].asSnakeBody()
+        ground.cells[0][2].asHead()
+        this.cells.unshift(ground.cells[0][0])
+        this.cells.unshift(ground.cells[0][1])
+        this.cells.unshift(ground.cells[0][2])
     }
 
     private clear() {
@@ -42,11 +37,11 @@ export class SnakeBody {
 
     moveTo(to: Cell) {
         const cells = this.cells
-        cells[cells.length-2].asTail()
+        const lastTail = cells.pop()?.asSpace()
+        cells[cells.length - 1].asTail()
         cells[0].asSnakeBody()
-        this.pop()
-        this.unshift(to)
         to.asHead()
+        cells.unshift(to)
     }
 
     getHead(): Cell {
@@ -59,7 +54,7 @@ export class SnakeBody {
 
     reset() {
         this.clear()
-        this.unshift(this.ground.cells[0][0])
-        this.unshift(this.ground.cells[0][1])
+        this.cells.unshift(this.ground.cells[0][0])
+        this.cells.unshift(this.ground.cells[0][1])
     }
 }

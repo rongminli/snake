@@ -44,7 +44,7 @@ function createGround(): Ground {
     fillGround(ground)
     const snake = new SmartSnake(ground)
     const food = new Food(ground)
-    food.next()
+    food.generate()
 
     ground.food = food
     ground.snake = snake
@@ -71,6 +71,7 @@ function createGround(): Ground {
 }
 
 export const ground = createGround()
+
 export const GroundVue = defineComponent({
     setup() {
         onblur = () => ground.pause()

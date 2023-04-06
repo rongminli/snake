@@ -1,5 +1,6 @@
 import { defineComponent } from "vue";
 import { ground } from "../Ground";
+import { last } from "../js/smartSnake";
 
 export default defineComponent({
     setup() {
@@ -14,6 +15,9 @@ export default defineComponent({
                 </a-button>
                 <a-button onClick={ground.restart}>
                     reset
+                </a-button>
+                <a-button onClick={()=>last()}>
+                    last
                 </a-button>
             </div>
     }

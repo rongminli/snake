@@ -11,7 +11,7 @@ export class Food {
     public cell: Cell | null = null
     constructor(private ground: Ground) {    }
    
-    private generate() {
+    public generate() {
         if(this.cell?.isFood()) {
             console.warn('already have food')
             return
@@ -22,12 +22,14 @@ export class Food {
         flatForEach(groundCells, (cell: Cell) => cell.isSpace() && spaceCell.push(cell))
 
         switch(spaceCell.length) {
-            case 0 : event.trigger(Events.VICTORY); break;
-            case 1 : this.cell = spaceCell[0]; break ;
+            case 0 : this.cell = null; break;
+            case 1 : this.cell = spaceCell[0]; this.cell.asFood(); break ;
             default : {
-                const randomIndex = Math.random() * spaceCell.length - 1 | 0
+                const randomIndex = Math.random() * (spaceCell.length - 1) | 0
                 const randomCell = spaceCell[randomIndex]
-        
+                if(!randomCell.isSpace()) {
+                    throw new Error('worry cell')
+                }
                 randomCell.asFood()
                 this.cell = randomCell
             }
@@ -36,18 +38,12 @@ export class Food {
 
     public eat(snakeBody: SnakeBody) {
         if(this.cell) {
-            this.cell.asHead()
             snakeBody.cells[0].asSnakeBody()
+            this.cell.asHead()
             snakeBody.cells.unshift(this.cell)
             this.cell = null
-            this.next()
+            this.generate()
         }
-    }
-
-    next() {
-        this.cell?.asSpace()
-        this.cell = null
-        this.generate()
     }
 }
 

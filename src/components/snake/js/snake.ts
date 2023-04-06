@@ -92,18 +92,13 @@ export class Snake {
         body.eat(ground.food)
     }
 
-    private step() {
-        const to = this.nextCell()
-        if (!to) {
-            return
-        }
-
+    public step(to: Cell) {
         if (to.isFood()) {
             this.eat()
         } else if (to.isSnakeBody()) {
             this.pause()
             message.error('You eat your self', 1.5);
-            return
+            throw new Error('You eat your self')
         } else {
             this.body.moveTo(to)
         }
@@ -120,7 +115,11 @@ export class Snake {
             this.move.bind(this),
             this.state.speed
         )
-        this.step()
+        const to = this.nextCell()
+        if (!to) {
+            return
+        }
+        this.step(to)
     }
 
     start() {
