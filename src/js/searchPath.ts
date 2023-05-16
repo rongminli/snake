@@ -37,16 +37,18 @@ const recall = (nextPathNodes: PathNode[], blockedPaths: PathNode[]) => {
     blockedPath && nextPathNodes.push(blockedPath)
 }
 
-export function searchPath(options: SearchPathOptions) {
+export function searchPath(options: SearchPathOptions): PathNode | undefined | false {
     const {
         firstNode,
         target,
         pathAssessment,
         derive
     } = options
+
     let nextPathNodes: PathNode[] = []
     const lockedNodes: Node[] = []
     const blockedPaths: PathNode[] = []
+    
     const firstPathNode = {
         parent: null,
         children: [],

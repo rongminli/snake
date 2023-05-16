@@ -64,7 +64,7 @@ function createGround(): Ground {
     ground.restart = () => {
         state.isActive = false
         ground.snake.reset()
-        ground.food.next()
+        ground.food.generate()
     }
 
     return ground

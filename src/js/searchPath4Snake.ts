@@ -1,7 +1,6 @@
 import { Ground } from "@/components/Snake/Ground";
 import { SearchPathOptions, PathNode, Node, searchPath } from "./searchPath";
 import { message } from 'ant-design-vue'
-import path from "path";
 
 type Area = Node[][]
 
@@ -10,6 +9,10 @@ const bodyNodeCache: Node[][] = [[]]
 let bodyNodes: Node[]
 let assessmentDeep = 0
 
+/**
+ * 初始化搜索区域
+ * @param ground 
+ */
 function initArea(ground: Ground) {
     const y = ground.cells.length
     const x = ground.cells[0].length
@@ -73,11 +76,10 @@ function isFutilePath(pathNode: PathNode) {
     }
     return true
 }
-const checkNodeAndPush = (node: Node, pathNode: PathNode, currentBodyNodes: Node[], accessibleNodes: Node[]) => {
-    (!currentBodyNodes.includes(node)
-        || node === currentBodyNodes[currentBodyNodes.length - 1])
-        // && !isCycle(pathNode, node)
-        && accessibleNodes.push(node)
+
+const accessibleCheck = (node: Node, currentBodyNodes: Node[]) => {
+    return !currentBodyNodes.includes(node)
+        || node === currentBodyNodes[currentBodyNodes.length - 1]
 }
 
 const getAccessibleNodes = (pathNode: PathNode): Node[] => {
@@ -88,36 +90,41 @@ const getAccessibleNodes = (pathNode: PathNode): Node[] => {
     const len2 = area[0].length
     if (x > 0) {
         const node = area[y][x - 1]
-        checkNodeAndPush(node, pathNode, currentBodyNodes, accessibleNodes)
+        accessibleCheck(node, currentBodyNodes)
+            && accessibleNodes.push(node)
     }
     if (x < len2 - 1) {
         const node = area[y][x + 1]
-        checkNodeAndPush(node, pathNode, currentBodyNodes, accessibleNodes)
+        accessibleCheck(node, currentBodyNodes)
+            && accessibleNodes.push(node)
     }
     if (y > 0) {
         const node = area[y - 1][x]
-        checkNodeAndPush(node, pathNode, currentBodyNodes, accessibleNodes)
+        accessibleCheck(node, currentBodyNodes)
+            && accessibleNodes.push(node)
     }
     if (y < len1 - 1) {
         const node = area[y + 1][x]
-        checkNodeAndPush(node, pathNode, currentBodyNodes, accessibleNodes)
+        accessibleCheck(node, currentBodyNodes)
+            && accessibleNodes.push(node)
     }
     return accessibleNodes
 }
 
 /**
      * 从当前路径派生子路径
-     * @param path 
+     * @param pathNode 
      */
-function derive(path: PathNode): PathNode[] {
-    const accessibleNodes = getAccessibleNodes(path)
+function derive(pathNode: PathNode): PathNode[] {
+    // 当前可访问的节点
+    const accessibleNodes = getAccessibleNodes(pathNode)
     const children: PathNode[] = []
     accessibleNodes.forEach(node => {
         const child: PathNode = {
-            parent: path,
+            parent: pathNode,
             node: node,
         }
-        children.push(child)
+        !isFutilePath(child) && children.push(child)
     })
     return children
 }
@@ -144,9 +151,14 @@ function needAssessment() {
         : assessmentDeep < 1
 }
 
+/**
+ * 路径评估
+ * @param pathNode 需要评估的路径
+ * @returns 如果到达当前路径后可以访问其他所有的空地时返回true，否则返回false 
+ */
 function pathAssessment(pathNode: PathNode) {
     console.log('pathAssessment', bodyNodes.length)
-    if(!needAssessment()) {
+    if (!needAssessment()) {
         return true
     }
     assessmentIn(pathNode)
@@ -173,6 +185,11 @@ function pathAssessment(pathNode: PathNode) {
     return true
 }
 
+/**
+ * 
+ * @param pathNode 寻尾式路径评估
+ * @returns 如果到达当前路径后能找到自己的尾部，则返回true，否则返回false
+ */
 function pathAssessment_1(pathNode: PathNode) {
     assessmentIn(pathNode)
     console.log('pathAssessment_1', bodyNodes.length)
@@ -182,19 +199,11 @@ function pathAssessment_1(pathNode: PathNode) {
         pathAssessment: () => true,
         derive
     }
-    let path = searchPath(options)
+    const path = searchPath(options)
     assessmentOut()
     if (!path || !path.parent) {
         return false
     }
-    // let pathLen = 0
-    // while (path.parent) {
-    //     pathLen++
-    //     if ((bodyNodes.length < 98 && pathLen > 3) || pathLen > 2) {
-    //         return true
-    //     }
-    //     path = path.parent
-    // }
     return true
 }
 
